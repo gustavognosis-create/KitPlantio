@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemap seria adicionado aqui futuramente
+# Sitemap: https://www.kitplantio.com.br/sitemap.xml
