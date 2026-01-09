@@ -1,8 +1,7 @@
 
-
 import React, { useState, useRef } from 'react';
 import { Product, CartItem } from '../types';
-import { X, Check, Sprout, MessageSquareQuote, Loader2, Sparkles, PenTool, Upload, Image as ImageIcon, Trash2, FileText, Clock, AlertCircle } from 'lucide-react';
+import { X, Check, Sprout, MessageSquareQuote, Loader2, Sparkles, PenTool, Upload, Image as ImageIcon, Trash2, FileText, Clock, AlertCircle, Share2, Facebook, Twitter, MessageCircle } from 'lucide-react';
 import { generateCreativeSuggestions } from '../services/geminiService';
 import { ShippingCalculator } from './ShippingCalculator';
 
@@ -29,8 +28,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
 
+  const [showShareOptions, setShowShareOptions] = useState(false);
+
   const handleAddToCart = () => {
-    // Se selecionou "Outro", mas não digitou nada, avisa ou usa "Personalizado"
     const finalSeed = isOtherSeed 
         ? (customSeedName.trim() || "Semente Personalizada") 
         : selectedSeed;
@@ -81,10 +81,27 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     }
   };
 
-  // Prepara a lista de opções adicionando "Outro" ao final
+  const handleShare = (platform: 'whatsapp' | 'facebook' | 'twitter') => {
+    const url = window.location.href;
+    const text = `Confira este ${product.title} na MyPlant: `;
+    
+    let shareUrl = '';
+    switch (platform) {
+      case 'whatsapp':
+        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + url)}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        break;
+    }
+    window.open(shareUrl, '_blank');
+  };
+
   const seedOptions = [...product.availableSeeds, 'Outro'];
 
-  // Imagem de fallback caso a principal falhe
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?q=80&w=1470&auto=format&fit=crop';
   };
@@ -97,11 +114,33 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
         <div className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl border border-stone-200">
           
-          <div className="absolute top-4 right-4 z-10">
-            <button onClick={onClose} className="bg-white/80 p-2 rounded-full hover:bg-stone-100 transition-colors text-stone-500">
+          <div className="absolute top-4 right-4 z-10 flex gap-2">
+            <button 
+              onClick={() => setShowShareOptions(!showShareOptions)} 
+              className="bg-white/80 p-2 rounded-full hover:bg-stone-100 transition-colors text-stone-500 shadow-sm"
+              title="Compartilhar"
+            >
+              <Share2 className="h-5 w-5" />
+            </button>
+            <button onClick={onClose} className="bg-white/80 p-2 rounded-full hover:bg-stone-100 transition-colors text-stone-500 shadow-sm">
               <X className="h-6 w-6" />
             </button>
           </div>
+
+          {/* Share Options Tooltip/Menu */}
+          {showShareOptions && (
+            <div className="absolute top-16 right-14 z-20 bg-white border border-stone-100 shadow-xl rounded-xl p-3 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+               <button onClick={() => handleShare('whatsapp')} className="flex items-center gap-2 px-3 py-2 hover:bg-green-50 rounded-lg text-sm text-stone-600 transition-colors">
+                  <MessageCircle className="w-4 h-4 text-green-500" /> WhatsApp
+               </button>
+               <button onClick={() => handleShare('facebook')} className="flex items-center gap-2 px-3 py-2 hover:bg-blue-50 rounded-lg text-sm text-stone-600 transition-colors">
+                  <Facebook className="w-4 h-4 text-blue-600" /> Facebook
+               </button>
+               <button onClick={() => handleShare('twitter')} className="flex items-center gap-2 px-3 py-2 hover:bg-sky-50 rounded-lg text-sm text-stone-600 transition-colors">
+                  <Twitter className="w-4 h-4 text-sky-400" /> Twitter
+               </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 h-full">
             {/* Image Side */}

@@ -20,9 +20,8 @@ export const generateCreativeSuggestions = async (
   `;
 
   try {
-    // Using gemini-3-flash-preview for basic text tasks
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash',
       contents: prompt,
     });
     return response.text || "Desculpe, não consegui gerar uma sugestão agora.";
@@ -51,9 +50,8 @@ export const chatWithAssistant = async (history: {role: 'user' | 'model', text: 
         const historyText = history.map(h => `${h.role === 'user' ? 'Cliente' : 'Flora'}: ${h.text}`).join('\n');
         const finalPrompt = `${systemInstruction}\n\nHistórico da conversa:\n${historyText}\nCliente: ${newMessage}\nFlora:`;
 
-        // Using gemini-3-flash-preview for basic text tasks
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-2.5-flash',
             contents: finalPrompt
         });
 

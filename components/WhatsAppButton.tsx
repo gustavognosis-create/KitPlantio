@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, X, MessageCircle, Phone, Minimize2 } from 'lucide-react';
 
@@ -6,7 +7,7 @@ export const WhatsAppButton: React.FC = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{from: 'agent'|'user', text: string}[]>([
       { from: 'agent', text: 'Olá! Sou a Leona. Seja bem-vindo(a) à MyPlant! 🌱' },
-      { from: 'agent', text: 'Estou online. Como posso ajudar com seu pedido personalizado hoje?' }
+      { from: 'agent', text: 'Como posso ajudar com seu pedido personalizado hoje?' }
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -21,26 +22,21 @@ export const WhatsAppButton: React.FC = () => {
     if (isOpen) scrollToBottom();
   }, [messages, isOpen]);
 
+  const openWhatsApp = (customMessage?: string) => {
+      const phoneNumber = "5527999279902"; 
+      const defaultText = "Olá Leona! Vim pelo site da MyPlant e gostaria de um orçamento.";
+      const text = encodeURIComponent(customMessage || defaultText);
+      window.open(`https://wa.me/${phoneNumber}?text=${text}`, '_blank');
+      setIsOpen(false); // Fecha a janelinha após redirecionar
+  };
+
   const handleSend = () => {
       if (!input.trim()) return;
       
       const userText = input;
+      // Envia direto para o WhatsApp
+      openWhatsApp(userText);
       setInput('');
-      setMessages(prev => [...prev, { from: 'user', text: userText }]);
-
-      // Resposta automática simulada
-      setTimeout(() => {
-          setMessages(prev => [...prev, { 
-              from: 'agent', 
-              text: 'Que ótimo! Para agilizar nosso atendimento e eu te mandar fotos dos modelos, me chama no WhatsApp clicando no botão abaixo? 👇' 
-          }]);
-      }, 1000);
-  };
-
-  const openWhatsApp = () => {
-      const phoneNumber = "5527999279902"; 
-      const message = encodeURIComponent("Olá Leona! Vim pelo chat do site.");
-      window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
   return (
@@ -75,17 +71,14 @@ export const WhatsAppButton: React.FC = () => {
                       </div>
                   ))}
                   
-                  {/* Botão de Ação CTA */}
-                  {messages.length > 2 && (
-                      <div className="flex justify-center mt-4">
-                          <button 
-                              onClick={openWhatsApp}
-                              className="bg-[#25D366] hover:bg-[#1ebd56] text-white px-4 py-2 rounded-full font-bold text-sm shadow-sm flex items-center gap-2 transition-transform hover:scale-105"
-                          >
-                              <MessageCircle className="w-4 h-4" /> Continuar no WhatsApp
-                          </button>
-                      </div>
-                  )}
+                  <div className="flex justify-center mt-4">
+                      <button 
+                          onClick={() => openWhatsApp()}
+                          className="bg-[#25D366] hover:bg-[#1ebd56] text-white px-4 py-2 rounded-full font-bold text-sm shadow-sm flex items-center gap-2 transition-transform hover:scale-105"
+                      >
+                          <MessageCircle className="w-4 h-4" /> Conversar agora
+                      </button>
+                  </div>
                   <div ref={messagesEndRef} />
               </div>
 
@@ -96,7 +89,7 @@ export const WhatsAppButton: React.FC = () => {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                      placeholder="Escreva uma mensagem..."
+                      placeholder="Diga oi para a Leona..."
                       className="flex-1 bg-white border-none rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-0 shadow-sm"
                   />
                   <button 
