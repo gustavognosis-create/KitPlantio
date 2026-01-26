@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -21,7 +22,7 @@ export const generateCreativeSuggestions = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
     return response.text || "Desculpe, não consegui gerar uma sugestão agora.";
@@ -32,7 +33,6 @@ export const generateCreativeSuggestions = async (
 };
 
 export const chatWithAssistant = async (history: {role: 'user' | 'model', text: string}[], newMessage: string): Promise<string> => {
-    // Instrução atualizada para restringir suculentas
     const systemInstruction = `
       Você é a 'Flora', a assistente virtual da MyPlant. 
       Você é especialista em kits de plantio com SEMENTES.
@@ -51,7 +51,7 @@ export const chatWithAssistant = async (history: {role: 'user' | 'model', text: 
         const finalPrompt = `${systemInstruction}\n\nHistórico da conversa:\n${historyText}\nCliente: ${newMessage}\nFlora:`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: finalPrompt
         });
 

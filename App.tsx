@@ -13,6 +13,7 @@ import { MOCK_PRODUCTS, MOCK_TESTIMONIALS, CATEGORIES, GALLERY_IMAGES, REELS_VID
 import { Product, CartItem, ViewState, User } from './types';
 import { Filter, Star, ShieldCheck, Heart, Trash2, ArrowRight, ShoppingCart, Sprout, Check, Quote, Mail, MapPin, Phone, Calendar, Gift, Briefcase, Baby, Globe, ImageIcon, FileText, Instagram, ChevronLeft, ChevronRight, Camera, Play } from 'lucide-react';
 import { ShippingOption } from './services/shippingService';
+import { supabase } from './services/supabaseClient';
 
 export const App: React.FC = () => {
   const [viewState, setViewState] = useState<ViewState>(ViewState.HOME);
@@ -28,6 +29,37 @@ export const App: React.FC = () => {
 
   // Auth State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Efeito para verificar sessão atual do Supabase
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || 'Cliente MyPlant',
+          email: session.user.email!,
+          type: session.user.user_metadata?.user_type || 'PF',
+          document: session.user.user_metadata?.document || ''
+        });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || 'Cliente MyPlant',
+          email: session.user.email!,
+          type: session.user.user_metadata?.user_type || 'PF',
+          document: session.user.user_metadata?.document || ''
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Estado para o formulário de orçamento
   const [quoteFormQuantity, setQuoteFormQuantity] = useState(30);
@@ -45,10 +77,19 @@ export const App: React.FC = () => {
     }
   }, [viewState, products.length]);
 
+  // Função centralizada para mudar de vista com verificação de login para o carrinho
+  const navigateTo = (view: ViewState) => {
+    if (view === ViewState.CART && !currentUser) {
+      setViewState(ViewState.LOGIN);
+    } else {
+      setViewState(view);
+    }
+  };
+
   // Logic to handle category filtering when navigating from Special Dates page
   const handleCategorySelect = (category: string) => {
     setActiveCategory(category);
-    setViewState(ViewState.ALL_PRODUCTS);
+    navigateTo(ViewState.ALL_PRODUCTS);
   };
 
   const filteredProducts = activeCategory === 'Todos' 
@@ -88,7 +129,8 @@ export const App: React.FC = () => {
     setViewState(ViewState.HOME);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
     setViewState(ViewState.HOME);
   };
@@ -205,7 +247,7 @@ export const App: React.FC = () => {
                 </div>
                 <div className="text-center mt-8">
                      <button 
-                       onClick={() => setViewState(ViewState.TESTIMONIALS)}
+                       onClick={() => navigateTo(ViewState.TESTIMONIALS)}
                        className="text-leaf-700 font-bold hover:underline text-sm"
                      >
                         Ler mais avaliações
@@ -391,9 +433,14 @@ export const App: React.FC = () => {
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 relative z-10 flex flex-col md:flex-row items-center gap-12">
            <div className="flex-1 space-y-6 text-center md:text-left">
-              <span className="inline-block px-4 py-1.5 rounded-full bg-leaf-100 text-leaf-700 text-sm font-bold tracking-wide mb-2">
-                 FEITO À MÃO & COM AMOR
-              </span>
+              <div>
+                <p className="text-leaf-700 font-bold uppercase tracking-[0.3em] text-[11px] sm:text-sm mb-4">
+                  LEMBRANCINHAS E BRINDES
+                </p>
+                <span className="inline-block px-4 py-1.5 rounded-full bg-leaf-100 text-leaf-700 text-sm font-bold tracking-wide mb-2">
+                   FEITO À MÃO & COM AMOR
+                </span>
+              </div>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-stone-800 leading-tight">
                 Cultive memórias que <span className="text-leaf-600">florescem</span>.
               </h2>
@@ -403,13 +450,13 @@ export const App: React.FC = () => {
               </p>
               <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <button 
-                  onClick={() => setViewState(ViewState.ALL_PRODUCTS)}
+                  onClick={() => navigateTo(ViewState.ALL_PRODUCTS)}
                   className="px-8 py-3 bg-leaf-600 hover:bg-leaf-700 text-white rounded-xl font-bold shadow-lg shadow-leaf-200 transition-all hover:-translate-y-1"
                 >
                   Ver Coleção
                 </button>
                 <button 
-                  onClick={() => setViewState(ViewState.QUOTE)}
+                  onClick={() => navigateTo(ViewState.QUOTE)}
                   className="px-8 py-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 rounded-xl font-medium transition-all"
                 >
                   Faça orçamento
@@ -576,7 +623,7 @@ export const App: React.FC = () => {
                 ))}
              </div>
              <button 
-               onClick={() => setViewState(ViewState.TESTIMONIALS)}
+               onClick={() => navigateTo(ViewState.TESTIMONIALS)}
                className="mt-8 text-leaf-700 font-bold hover:underline"
              >
                 Ver todos os depoimentos
@@ -632,7 +679,7 @@ export const App: React.FC = () => {
                 <p className="text-leaf-100">Para grandes quantidades e personalizações especiais.</p>
             </div>
             <div className="p-8 md:p-12">
-                <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert('Orçamento enviado! Entraremos em contato em breve.'); setViewState(ViewState.HOME); }}>
+                <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert('Orçamento enviado! Entraremos em contato em breve.'); navigateTo(ViewState.HOME); }}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-stone-700 mb-2">Nome Completo</label>
@@ -747,7 +794,7 @@ export const App: React.FC = () => {
             <h3 className="text-2xl font-bold text-stone-800 mb-4">Quer fazer parte dessa história?</h3>
             <p className="text-stone-600 mb-8">Faça seu orçamento hoje e leve a natureza para o seu evento.</p>
             <button 
-                onClick={() => setViewState(ViewState.QUOTE)}
+                onClick={() => navigateTo(ViewState.QUOTE)}
                 className="px-8 py-3 bg-leaf-600 text-white rounded-xl font-bold shadow-lg hover:bg-leaf-700 transition-colors"
             >
                 Solicitar Orçamento
@@ -824,7 +871,7 @@ export const App: React.FC = () => {
           <Sprout className="mx-auto h-16 w-16 text-stone-300 mb-4" />
           <p className="text-stone-500 text-lg mb-6">Seu carrinho está vazio.</p>
           <button 
-            onClick={() => setViewState(ViewState.ALL_PRODUCTS)}
+            onClick={() => navigateTo(ViewState.ALL_PRODUCTS)}
             className="px-8 py-3 bg-leaf-600 text-white rounded-xl font-bold hover:bg-leaf-700"
           >
             Ver Produtos
@@ -898,7 +945,7 @@ export const App: React.FC = () => {
               </div>
 
               <button 
-                onClick={() => setViewState(ViewState.PAYMENT)}
+                onClick={() => navigateTo(ViewState.PAYMENT)}
                 disabled={selectedShippingId === null}
                 className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-lg shadow-orange-100 transition-all mb-3"
               >
@@ -908,7 +955,7 @@ export const App: React.FC = () => {
                   <p className="text-xs text-center text-red-400">Selecione uma opção de frete para continuar</p>
               )}
               
-              <button onClick={() => setViewState(ViewState.ALL_PRODUCTS)} className="w-full text-center text-sm text-stone-500 hover:text-stone-800">
+              <button onClick={() => navigateTo(ViewState.ALL_PRODUCTS)} className="w-full text-center text-sm text-stone-500 hover:text-stone-800">
                 Continuar Comprando
               </button>
             </div>
@@ -938,7 +985,7 @@ export const App: React.FC = () => {
       </div>
       <div>
         <button 
-            onClick={() => setViewState(ViewState.HOME)}
+            onClick={() => navigateTo(ViewState.HOME)}
             className="px-8 py-3 bg-leaf-600 text-white rounded-xl font-bold hover:bg-leaf-700"
         >
             Voltar para a Loja
@@ -951,7 +998,7 @@ export const App: React.FC = () => {
     <div className="min-h-screen flex flex-col font-sans text-stone-800">
       <Header 
         cartCount={cart.length} 
-        setViewState={setViewState}
+        setViewState={navigateTo}
         currentUser={currentUser}
         onLogout={handleLogout}
       />
@@ -966,19 +1013,19 @@ export const App: React.FC = () => {
         {viewState === ViewState.CART && renderCart()}
         {viewState === ViewState.CHECKOUT_SUCCESS && renderSuccess()}
         {viewState === ViewState.ADMIN && <AdminDashboard products={products} onUpdateProducts={setProducts} />}
-        {viewState === ViewState.LOGIN && <LoginScreen onLogin={handleLogin} onCancel={() => setViewState(ViewState.HOME)} />}
+        {viewState === ViewState.LOGIN && <LoginScreen onLogin={handleLogin} onCancel={() => navigateTo(ViewState.HOME)} />}
         {viewState === ViewState.USER_PROFILE && currentUser && (
             <UserProfile 
                 user={currentUser} 
                 onLogout={handleLogout}
-                onNavigateHome={() => setViewState(ViewState.HOME)}
+                onNavigateHome={() => navigateTo(ViewState.HOME)}
             />
         )}
         {viewState === ViewState.PAYMENT && (
             <CheckoutScreen 
                 total={calculateTotal()} 
                 onSuccess={() => { setCart([]); setViewState(ViewState.CHECKOUT_SUCCESS); }}
-                onCancel={() => setViewState(ViewState.CART)}
+                onCancel={() => navigateTo(ViewState.CART)}
             />
         )}
       </main>
@@ -1010,17 +1057,17 @@ export const App: React.FC = () => {
                 <div>
                     <h4 className="font-bold mb-4 text-leaf-100">Produtos</h4>
                     <ul className="space-y-2 text-sm text-stone-400">
-                        <li><button onClick={() => { setViewState(ViewState.ALL_PRODUCTS); setActiveCategory('Datas Comemorativas'); }} className="hover:text-white">Datas Especiais</button></li>
-                        <li><button onClick={() => { setViewState(ViewState.ALL_PRODUCTS); setActiveCategory('Eventos Corporativos'); }} className="hover:text-white">Corporativo</button></li>
-                        <li><button onClick={() => { setViewState(ViewState.ALL_PRODUCTS); setActiveCategory('Aniversários Infantis'); }} className="hover:text-white">Infantil</button></li>
-                        <li><button onClick={() => { setViewState(ViewState.ALL_PRODUCTS); setActiveCategory('Datas Ambientais'); }} className="hover:text-white">Datas Ambientais</button></li>
+                        <li><button onClick={() => { handleCategorySelect('Datas Comemorativas'); }} className="hover:text-white">Datas Especiais</button></li>
+                        <li><button onClick={() => { handleCategorySelect('Eventos Corporativos'); }} className="hover:text-white">Corporativo</button></li>
+                        <li><button onClick={() => { handleCategorySelect('Aniversários Infantis'); }} className="hover:text-white">Infantil</button></li>
+                        <li><button onClick={() => { handleCategorySelect('Datas Ambientais'); }} className="hover:text-white">Datas Ambientais</button></li>
                     </ul>
                 </div>
                 <div>
                     <h4 className="font-bold mb-4 text-leaf-100">Ajuda</h4>
                     <ul className="space-y-2 text-sm text-stone-400">
-                        <li><button onClick={() => setViewState(ViewState.QUOTE)} className="hover:text-white">Orçamento</button></li>
-                        <li><button onClick={() => setViewState(ViewState.CONTACT)} className="hover:text-white">Fale Conosco</button></li>
+                        <li><button onClick={() => navigateTo(ViewState.QUOTE)} className="hover:text-white">Orçamento</button></li>
+                        <li><button onClick={() => navigateTo(ViewState.CONTACT)} className="hover:text-white">Fale Conosco</button></li>
                         <li><span className="text-stone-600">Política de Privacidade</span></li>
                         <li><span className="text-stone-600">Termos de Uso</span></li>
                     </ul>
